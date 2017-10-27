@@ -1,12 +1,37 @@
 import json
 from pprint import pprint
-import sklearn_crfsuite
+from textblob import TextBlob
+import random
 
 def readFile(file):
 	with open(file) as data_file:
 		data = json.load(data_file)
 
 	return data
+
+
+def baseLine(data):
+	paragraphs = data["data"][0]["paragraphs"]
+	baseDict = {}
+
+	for i in range(len(paragraphs)):
+		context = paragraphs[i]["context"]
+		noun_phrases = TextBlob(context).noun_phrases
+		qas = paragraphs[i]["qas"]
+
+		for j in range(len(qas)):
+			num = random.randrange(len(noun_phrases))
+			randanswer = noun_phrases[num]
+			current_id = qas[j]["id"]
+			baseDict[current_id] = randanswer
+
+	return baseDict
+
+def writeJson(dict):
+	with open('pred.json', 'w') as fp:
+		json.dump(dict, fp)
+
+
 
 # helper function
 # creates features for a simple crf model - only uses word and pos tag
