@@ -2,7 +2,12 @@ import json
 from pprint import pprint
 from textblob import TextBlob
 import random
+from collections import defaultdict
+import pandas as pd
 
+#####BASELINE MODEL:
+
+#reads file
 def readFile(file):
 	with open(file) as data_file:
 		data = json.load(data_file)
@@ -10,6 +15,7 @@ def readFile(file):
 	return data
 
 
+#Random choose model
 def baseLine(data):
 	paragraphs = data["data"][0]["paragraphs"]
 	baseDict = {}
@@ -27,10 +33,15 @@ def baseLine(data):
 
 	return baseDict
 
+#write out prediction json
 def writeJson(dict):
 	with open('pred.json', 'w') as fp:
 		json.dump(dict, fp)
 
+
+
+
+#######IGNORE, THIS IS FOR POSSIBLE IOG TAG METHODS FOR USE LATER IN PROJECT
 
 
 # helper function
@@ -89,4 +100,56 @@ def crf(train_file, test_file, create_features):
 	y_pred = crf.predict(x_test)
 	y_pred_flat = [word for sent in y_pred for word in sent]
 	return y_pred_flat
+
+
+#create bigram/unigram table
+def store_counts(filename):
+	
+	data = readFile(filename)
+	types = defaultdict(lambda: defaultdict(int))
+	seen = set()  # instantiate seen word set
+
+	paras = data["data"][0]["paragraphs"]
+
+	for i in range(len(paras)):
+
+		currentp = paras[i]['context']
+
+		currentp = currentp.replace(" n't", "n 't")  # Standardize the contractions ('t is a separate word)
+    	currentp = currentp.replace('-', ' ')  # Get rid of hyphens
+
+    	#split into words, add start/end tokens
+    	tokens = ['<s>'] + currentp.split() + ['</s>']
+
+        count = len(tokens)
+        for i in range(count-1):
+            # treat upper and lower case words the same
+            word1 = tokens[i].lower()
+            word2 = tokens[i+1].lower()
+
+            #if words NOT in set, add to set, and change current word to <unk>
+            if(not(word1 in seen)):
+                seen.add(word1)
+                word1 = "<unk>"
+            
+            if(not(word2 in seen)):
+                seen.add(word2)
+                word2 = "<unk>"
+
+            types[word1][word2] += 1
+
+    # convert dictionary to table
+	table = pd.DataFrame(types).T
+    # add totals
+	table['SUM'] = table.sum(axis=1)
+ 	#table.loc['</s>', 'SUM'] = int(table.loc['<s>', 'SUM'])
+ 	table = table.fillna(0).applymap(lambda x: int(x))
+ 	return table
+
+# return the unigram P(word) for a given word, with a given table of counts
+def unigram(word, table):
+    try:
+        return float(table.loc[word, 'SUM'])/float(table['SUM'].sum())
+    except KeyError:
+        print "This word doesn't exist in the corpus."
 
