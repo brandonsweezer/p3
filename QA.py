@@ -5,6 +5,7 @@ import random
 from collections import defaultdict
 import pandas as pd
 from nltk.tag.stanford import StanfordNERTagger
+import re
 
 
 ####Main method, gets called when file run as script. Where the magic happens####
@@ -20,10 +21,23 @@ def main():
 
 	data = readFile(evalFile)
 	paragraphs = data["data"][0]["paragraphs"]
-	baseDict = {}
+	QADict = {}
 
 	for i in range(len(paragraphs)):
 		context = paragraphs[i]["context"]
+		nps = noun_phrases(context) #noun phrases
+		qs = paragraphs[i]["qas"] #questions
+		taggedContext = tagger.tag(context.split())
+		taggedPhrases = getNerPhrases(taggedContext)
+
+		for j in range(len(qas)):
+			current_id = qas[j]["id"]
+			answerType = guessAnswerType(j)
+			possibleAnswers = narrowPhrases(answerType,taggedPhrases)
+
+
+
+
 		
 
 #####BASELINE MODEL:
@@ -64,7 +78,7 @@ def writeJson(dict):
 
 #question is the string query to which we will find an answer.
 #Returns one of the following strings:
-#"person" "place" "organization" "time" "thing" "number" "unknown" 
+#"person" "location" "organization" "time" "date" "thing" "number" "unknown" 
 #This string indicates which type of answer the question is looking for
 def guessAnswerType(question):
 	personIdentifiers = ["person", "Who", "who", "Whom", "whom", "person", "individual"]
@@ -114,6 +128,51 @@ def guessAnswerType(question):
 		return "unknown"
 
 	return mostTag #if there is a tie, just use one of them, it's more helpful than nothing
+
+
+def narrowPhrases(aType, taggedPhrases):
+	narrowedList = []
+
+	for phrase, tag in taggedPhrases:
+		t = tag.lower()
+		if aType == t:
+			narrowedList.append(phrase)
+
+		if t == "misc":
+			if aType == "number":
+				if bool(re.search(r'\d', phrase)): #see if there's a digit in the phrase
+					narrowedList.append(phrase)
+
+			elif not (aType == "person" or aType == "organization" or aType == "location"):
+				narrowedList.append(phrase)
+
+	return narrowedList
+
+
+def getNERPhrases(taggedWords):	
+	taggedPhrases = []
+
+	runningPhrase = ""
+	runningTag = "O"
+
+	for word, tag in taggedWords:
+		if tag == "O":
+			if not (runningTag = "O"):
+				taggedPhrases.append(runningPhrase.strip(' '),runningTag)
+				runningPhrase = ""
+				runningTag = "O"
+		elif not (tag == runningTag):
+			taggedPhrases.append(runningPhrase.strip(' '),runningTag)
+			runningPhrase = word
+			runningTag = tag
+		else:
+			runningPhrase = runningPhrase + " " + word
+
+	for p, t in taggedPhrases:
+		if p == "" or t == "O":
+			taggedPhrases.remove((p,t))
+
+	return taggedPhrases
 
 
 #############################
