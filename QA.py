@@ -47,16 +47,17 @@ def writeJson(dict):
 #This string indicates which type of answer the question is looking for
 def guessAnswerType(question):
 	personIdentifiers = ["person", "Who", "who", "Whom", "whom", "person", "individual"]
-	placeIdentifiers = ["place", "Where", "where", "location", "place", "at", "country", "state",
+	locationIdentifiers = ["location", "Where", "where", "location", "place", "at", "country", "state",
 	 "city", "county", "province"]
 	organizationIdentifiers = ["organization", "Which", "which", "What", "what", "organization", 
 	 "team", "business", "company"]
-	timeIdentifiers = ["time", "When", "when", "time", "What time", "what time", "at"]
+	timeIdentifiers = ["time", "When", "when", "time", "What time", "what time", "in"]
+	dateIdentifiers = ["date", "When", "when", "what date", "What date", "year"]
 	thingIdentifiers = ["thing", "What", "what", "Which", "which"]
 	numberIdentifiers = ["number", "How many", "how many", "What number", "what number", "How much",
 	 "how much", "number", "number of", "count"]
 
-	identifiersList = [personIdentifiers,placeIdentifiers,organizationIdentifiers,
+	identifiersList = [personIdentifiers,locationIdentifiers,organizationIdentifiers,
 	timeIdentifiers,thingIdentifiers,numberIdentifiers]
 	
 	runningGuesses = []
@@ -88,10 +89,10 @@ def guessAnswerType(question):
 		elif count == mostFreq:
 			tie = tag #--------------/Getting most frequent tag-----------------
 
-	if tie == "": #if there is a tie between the two most frequent, return unknown
-		return mostTag
+	if mostTag == "":
+		return "unknown"
 
-	return "unknown"
+	return mostTag #if there is a tie, just use one of them, it's more helpful than nothing
 
 #############################
 
