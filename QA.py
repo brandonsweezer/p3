@@ -21,7 +21,7 @@ def main():
 
 	tagger = StanfordNERTagger("stanford-ner-2014-06-16/classifiers/english.conll.4class.distsim.crf.ser.gz",
 		"stanford-ner-2014-06-16/stanford-ner.jar")
-	evalFile = "testing.json"
+	evalFile = "development.json"
 
 	data = readFile(evalFile)
 	paragraphs = data["data"][0]["paragraphs"]
@@ -117,7 +117,10 @@ def calcPer(context, uni, bi):
   perplex = 1
   for x in elements:
     prev = x[0]
-    perplex = perplex * (unigramValue(prev, uni) / (float(bi.get(x,1/len(bi))) / sum(bi.values())))
+    if(x in bi.keys()):
+        perplex = perplex * (unigramValue(prev, uni) / (float(bi[x]) / sum(bi.values())))
+    else:
+    	perplex * (unigramValue(prev, uni) / ((float(1)/len(bi.keys())) / sum(bi.values())))
   N = len(elements)
   return (perplex)**(1/float(N))
 
