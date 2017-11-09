@@ -230,6 +230,18 @@ def unigram(word, table):
 	except KeyError:
 		print("This word doesn't exist in the corpus.")
 
+def random_paragraph(filename):
+	data = readFile(filename)
+	paragraphs = data["data"][0]["paragraphs"]
+	p = random.randrange(len(paragraphs))
+	return paragraphs[p]["context"]
+
+def noun_phrases(paragraph):
+	return TextBlob(paragraph).noun_phrases
+
+def pos_tagger(paragraph):
+	return TextBlob(paragraph).tags
+
 
 if __name__ == "__main__":
 	main()
