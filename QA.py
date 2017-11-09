@@ -19,7 +19,7 @@ def main():
 	if not (runscript == "y" or runscript == "Y"):
 		return "Done."
 
-	tagger = StanfordNERTagger("stanford-ner-2014-06-16\classifiers\english.conll.4class.distsim.crf.ser.gz",
+	tagger = StanfordNERTagger("stanford-ner-2014-06-16/classifiers/english.conll.4class.distsim.crf.ser.gz",
 		"stanford-ner-2014-06-16/stanford-ner.jar")
 	evalFile = "testing.json"
 
@@ -61,25 +61,12 @@ provided was "24", rephrase("24","How many hours in the day are there?") would o
 "There are 24 hours in the day."
 """
 def rephrase(answer, question):
+	unwanted = ["Did", "Who", "When", "What", "Where", "Why", "How", "Whom", "did", "who", "when", 
+	 "what", "where", "why", "how", "whom", "much", "many", "kind", "sort", " "]
+	
 	newq = question
-	newq = newq.strip("Did")
-	newq = newq.strip("Who")
-	newq = newq.strip("who")
-	newq = newq.strip("when")
-	newq = newq.strip("When")
-	newq = newq.strip("What")
-	newq = newq.strip("what")
-	newq = newq.strip("where")
-	newq = newq.strip("Where")
-	newq = newq.strip("Why")
-	newq = newq.strip("why")
-	newq = newq.strip("How")
-	newq = newq.strip("how")
-	newq = newq.strip("much")
-	newq = newq.strip("many")
-	newq = newq.strip("kind")
-	newq = newq.strip("sort")
-	newq = newq.strip("did")
+	for item in unwanted:
+		newq.strip(item)
 
 	return answer + question
 
