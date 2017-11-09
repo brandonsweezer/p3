@@ -219,14 +219,10 @@ def guessAnswerType(question):
 
 def narrowPhrases(aType, taggedPhrases):
 	narrowedList = []
-
-	if aType == "unknown":
-		for phrase, tag in taggedPhrases:
-			narrowedList.append(phrase)
-			
-		return narrowedList
+	allphrases = []
 
 	for phrase, tag in taggedPhrases:
+		allphrases.append(phrase)
 		t = tag.lower()
 		if aType == t:
 			narrowedList.append(phrase)
@@ -238,6 +234,9 @@ def narrowPhrases(aType, taggedPhrases):
 
 			elif not (aType == "person" or aType == "organization" or aType == "location"):
 				narrowedList.append(phrase)
+
+	if narrowedList == []:
+		narrowedList = allphrases
 
 	return narrowedList
 
