@@ -45,7 +45,7 @@ def main():
 			for answer in possibleAnswers:
 				answerStatement = rephrase(answer,question) #Rephrase the answer as a statement
 				answerScore = calculatePerplexity(answerStatement,context) #Calculate the perplexity of the generated statement based on the context
-				if answerScore < bestScore:
+				if answerScore < bestScore: #Find answer with least perplexity
 					bestAnswer = answer
 					bestScore = answerScore
 
@@ -219,6 +219,12 @@ def guessAnswerType(question):
 
 def narrowPhrases(aType, taggedPhrases):
 	narrowedList = []
+
+	if aType == "unknown":
+		for phrase, tag in taggedPhrases:
+			narrowedList.append(phrase)
+			
+		return narrowedList
 
 	for phrase, tag in taggedPhrases:
 		t = tag.lower()
