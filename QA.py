@@ -38,7 +38,7 @@ def main():
 			current_id = qs[j]["id"]
 			question = qs[j]["question"]
 			answerType = guessAnswerType(question)
-			possibleAnswers = narrowPhrases(answerType,taggedPhrases) #WE NEED TO TAKE INTO ACCOUNT VERB PHRASES
+			possibleAnswers = narrowPhrases(answerType,taggedPhrases,question) #WE NEED TO TAKE INTO ACCOUNT VERB PHRASES
 
 			bestAnswer = ""
 			bestScore = 2^31
@@ -217,7 +217,7 @@ def guessAnswerType(question):
 	return mostTag #if there is a tie, just use one of them, it's more helpful than nothing
 
 
-def narrowPhrases(aType, taggedPhrases):
+def narrowPhrases(aType, taggedPhrases,question):
 	narrowedList = []
 	allphrases = []
 
@@ -237,6 +237,10 @@ def narrowPhrases(aType, taggedPhrases):
 
 	if narrowedList == []:
 		narrowedList = allphrases
+
+	for phrase in narrowedList:
+		if not (question.find(phrase) == -1):
+			narrowedList.remove(phrase)
 
 	return narrowedList
 
