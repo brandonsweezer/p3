@@ -14,10 +14,9 @@ from collections import Counter
 
 ####Main method, gets called when file run as script. Where the magic happens####
 def main():
-
-	runscript = input("Do the thing? (y/n) ")
-	if not (runscript == "y" or runscript == "Y"):
-		return "Done."
+	# runscript = input("Do the thing? (y/n) ")
+	# if not (runscript == "y" or runscript == "Y"):
+	# 	return "Done."
 
 	tagger = StanfordNERTagger("stanford-ner-2014-06-16/classifiers/english.conll.4class.distsim.crf.ser.gz",
 		"stanford-ner-2014-06-16/stanford-ner.jar")
