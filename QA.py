@@ -20,7 +20,7 @@ def main():
 		return "Done."
 
 	tagger = StanfordNERTagger("stanford-ner-2014-06-16\classifiers\english.conll.4class.distsim.crf.ser.gz",
-		"stanford-ner-2014-06-16\stanford-ner.jar")
+		"stanford-ner-2014-06-16/stanford-ner.jar")
 	evalFile = "testing.json"
 
 	data = readFile(evalFile)
@@ -32,11 +32,12 @@ def main():
 		nps = noun_phrases(context) #noun phrases
 		qs = paragraphs[i]["qas"] #questions
 		taggedContext = tagger.tag(context.split())
-		taggedPhrases = getNerPhrases(taggedContext)
+		taggedPhrases = getNERPhrases(taggedContext)
 
-		for j in range(len(qas)):
-			current_id = qas[j]["id"]
-			answerType = guessAnswerType(j)
+		for j in range(len(qs)):
+			current_id = qs[j]["id"]
+			question = qs[j]["question"]
+			answerType = guessAnswerType(question)
 			possibleAnswers = narrowPhrases(answerType,taggedPhrases) #WE NEED TO TAKE INTO ACCOUNT VERB PHRASES
 
 			bestAnswer = ""
@@ -51,6 +52,7 @@ def main():
 			QADict[current_id] = bestAnswer
 
 	writeJson(QADict)
+	print("Done.")
 		
 
 """Rephrases an answer (a noun or verb phrase) as a statement, given the question
@@ -59,7 +61,27 @@ provided was "24", rephrase("24","How many hours in the day are there?") would o
 "There are 24 hours in the day."
 """
 def rephrase(answer, question):
-	pass
+	newq = question
+	newq = newq.strip("Did")
+	newq = newq.strip("Who")
+	newq = newq.strip("who")
+	newq = newq.strip("when")
+	newq = newq.strip("When")
+	newq = newq.strip("What")
+	newq = newq.strip("what")
+	newq = newq.strip("where")
+	newq = newq.strip("Where")
+	newq = newq.strip("Why")
+	newq = newq.strip("why")
+	newq = newq.strip("How")
+	newq = newq.strip("how")
+	newq = newq.strip("much")
+	newq = newq.strip("many")
+	newq = newq.strip("kind")
+	newq = newq.strip("sort")
+	newq = newq.strip("did")
+
+	return answer + question
 
 
 """Calculates the perplexity of a statement given a context. This statement will be the 
@@ -74,7 +96,7 @@ def calculatePerplexity(answerStatement,context):
 
 """Returns the unigram value, P(word), for a given word with a given dictionary of unigrams"""
 def unigramValue(word, dic):
-  return float(dic[word]) / sum(dic.values())
+  return float(dic.get(word,1/len(dic))) / sum(dic.values())
 
 """Returns the unigram dictionary given the context paragraph"""
 def unigram(para):
@@ -108,7 +130,7 @@ def calcPer(context, uni, bi):
   perplex = 1
   for x in elements:
     prev = x[0]
-    perplex = perplex * (unigramValue(prev, uni) / (float(bi[x]) / sum(bi.values())))
+    perplex = perplex * (unigramValue(prev, uni) / (float(bi.get(x,1/len(bi))) / sum(bi.values())))
   N = len(elements)
   return (perplex)**(1/float(N))
 
@@ -177,7 +199,7 @@ def guessAnswerType(question):
 
 	for identifiers in identifiersList: #Loops through every phrase in each set of
 		for phrase in identifiers[1:]:   #identifiers, and adds the corresponding
-			if phrase + " " in question:      #tag to the guesses list as it goes
+			if not question.find(phrase + " ") == -1:      #tag to the guesses list as it goes
 				runningGuesses.append(identifiers[0])
 	
 	if runningGuesses == []: #if there is no guess, return unknown
@@ -235,12 +257,12 @@ def getNERPhrases(taggedWords):
 
 	for word, tag in taggedWords:
 		if tag == "O":
-			if not (runningTag = "O"):
-				taggedPhrases.append(runningPhrase.strip(' '),runningTag)
+			if not (runningTag == "O"):
+				taggedPhrases.append((runningPhrase.strip(' '),runningTag))
 				runningPhrase = ""
 				runningTag = "O"
 		elif not (tag == runningTag):
-			taggedPhrases.append(runningPhrase.strip(' '),runningTag)
+			taggedPhrases.append((runningPhrase.strip(' '),runningTag))
 			runningPhrase = word
 			runningTag = tag
 		else:
