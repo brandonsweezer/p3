@@ -4,6 +4,27 @@ from textblob import TextBlob
 import random
 from collections import defaultdict
 import pandas as pd
+from nltk.tag.stanford import StanfordNERTagger
+
+
+####Main method, gets called when file run as script. Where the magic happens####
+def main():
+
+	runscript = input("Do the thing? (y/n) ")
+	if not (runscript == "y" or runscript == "Y"):
+		return "Done."
+
+	tagger = StanfordNERTagger("stanford-ner-2014-06-16\classifiers\english.conll.4class.distsim.crf.ser.gz",
+		"stanford-ner-2014-06-16\stanford-ner.jar")
+	evalFile = "testing.json"
+
+	data = readFile(evalFile)
+	paragraphs = data["data"][0]["paragraphs"]
+	baseDict = {}
+
+	for i in range(len(paragraphs)):
+		context = paragraphs[i]["context"]
+		
 
 #####BASELINE MODEL:
 
@@ -58,7 +79,7 @@ def guessAnswerType(question):
 	 "how much", "number", "number of", "count"]
 
 	identifiersList = [personIdentifiers,locationIdentifiers,organizationIdentifiers,
-	timeIdentifiers,thingIdentifiers,numberIdentifiers]
+	timeIdentifiers,dateIdentifiers,thingIdentifiers,numberIdentifiers]
 	
 	runningGuesses = []
 
@@ -93,6 +114,7 @@ def guessAnswerType(question):
 		return "unknown"
 
 	return mostTag #if there is a tie, just use one of them, it's more helpful than nothing
+
 
 #############################
 
@@ -208,3 +230,6 @@ def unigram(word, table):
 	except KeyError:
 		print("This word doesn't exist in the corpus.")
 
+
+if __name__ == "__main__":
+	main()
