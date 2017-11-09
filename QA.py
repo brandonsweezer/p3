@@ -6,6 +6,10 @@ from collections import defaultdict
 import pandas as pd
 from nltk.tag.stanford import StanfordNERTagger
 
+import nltk
+from nltk import word_tokenize
+from nltk.util import ngrams
+from collections import Counter
 
 ####Main method, gets called when file run as script. Where the magic happens####
 def main():
@@ -223,12 +227,68 @@ def store_counts(filename):
 	table = table.fillna(0).applymap(lambda x: int(x))
 	return table
 
-# return the unigram P(word) for a given word, with a given table of counts
-def unigram(word, table):
-	try:
-		return float(table.loc[word, 'SUM'])/float(table['SUM'].sum())
-	except KeyError:
-		print("This word doesn't exist in the corpus.")
+#returns unigram dictionary based off training data
+def training_unigram():
+  data = readFile("training.json")
+  seen = set()
+  unigrams = {}
+  paras = data["data"][0]["paragraphs"]
+  length = len(paras)
+
+  for i in range(length):
+    currentp = paras[i]["context"]
+    currentp = currentp.replace(" n't", "n 't")
+    currentp = currentp.replace("-", " ")
+    tokens = ['<s>'] + currentp.split() + ['</s>']
+    count = len(tokens)
+    for j in range(count):
+      word1 = tokens[j].lower()
+      if(not(word1 in seen)):
+        seen.add(word1)
+        word1 = "<unk>"
+
+      if(not(word1 in unigrams.keys())):
+        unigrams[word1] = 1
+      else: 
+        unigrams[word1] = unigrams[word1] + 1
+
+  return unigrams
+
+# return the unigram P(word) for a given word, with a given dictionary of unigrams
+def unigramValue(word, dic):
+  return float(dic[word]) / sum(dic.values())
+
+#returns unigram dictionary for context string
+def unigram(para):
+  token = nltk.word_tokenize(para)
+  unidict = {}
+  for i in range(len(token)):
+    word1 = token[i].lower()
+    if not(word1 in unidict):
+      unidict[word1] = 1
+    else: 
+      unidict[word1] = unidict[word1] + 1
+  return unidict
+
+#returns bigram counter for given paragraph context string
+def bigram(para):
+  token = nltk.word_tokenize(para)
+  token = [x.lower() for x in token]
+  bigrams = ngrams(token, 2)
+  return Counter(bigrams)
+
+#calculated perplexity given a context string, unigram dictionary, and bigram counter
+def calcPer(context, uni, bi):
+  contextBi = bigram(context)
+  if(len(contextBi) == 0):
+    return (1/unigramValue(context, uni))
+  elements = list(contextBi.elements())
+  perplex = 1
+  for x in elements:
+    prev = x[0]
+    perplex = perplex * (unigramValue(prev, uni) / (float(bi[x]) / sum(bi.values())))
+  N = len(elements)
+  return (perplex)**(1/float(N))
 
 def random_paragraph(filename):
 	data = readFile(filename)
