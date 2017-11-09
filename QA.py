@@ -7,7 +7,7 @@ import pandas as pd
 
 #####BASELINE MODEL:
 
-#reads file
+#reads file, returns data of file as json
 def readFile(file):
 	with open(file) as data_file:
 		data = json.load(data_file)
@@ -39,7 +39,61 @@ def writeJson(dict):
 		json.dump(dict, fp)
 
 
+####### Actual Method #######
 
+#question is the string query to which we will find an answer.
+#Returns one of the following strings:
+#"person" "place" "organization" "time" "thing" "number" "unknown" 
+#This string indicates which type of answer the question is looking for
+def guessAnswerType(question):
+	personIdentifiers = ["person", "Who", "who", "Whom", "whom", "person", "individual"]
+	placeIdentifiers = ["place", "Where", "where", "location", "place", "at", "country", "state",
+	 "city", "county", "province"]
+	organizationIdentifiers = ["organization", "Which", "which", "What", "what", "organization", 
+	 "team", "business", "company"]
+	timeIdentifiers = ["time", "When", "when", "time", "What time", "what time", "at"]
+	thingIdentifiers = ["thing", "What", "what", "Which", "which"]
+	numberIdentifiers = ["number", "How many", "how many", "What number", "what number", "How much",
+	 "how much", "number", "number of", "count"]
+
+	identifiersList = [personIdentifiers,placeIdentifiers,organizationIdentifiers,
+	timeIdentifiers,thingIdentifiers,numberIdentifiers]
+	
+	runningGuesses = []
+
+	for identifiers in identifiersList: #Loops through every phrase in each set of
+		for phrase in identifiers[1:]:   #identifiers, and adds the corresponding
+			if phrase + " " in question:      #tag to the guesses list as it goes
+				runningGuesses.append(identifiers[0])
+	
+	if runningGuesses == []: #if there is no guess, return unknown
+		return "unknown"
+
+	uniqueTags = [] #---------------Getting most frequent tag------------------
+	for tag in runningGuesses:
+		if tag not in uniqueTags:
+			uniqueTags.append(tag)
+
+	tagCounts = []
+	for tag in uniqueTags:
+		tagCounts.append([tag,runningGuesses.count(tag)])
+
+	mostFreq = 0
+	mostTag = ""
+	tie = ""
+	for tag,count in tagCounts:
+		if count > mostFreq:
+			mostTag = tag
+			mostFreq = count
+		elif count == mostFreq:
+			tie = tag #--------------/Getting most frequent tag-----------------
+
+	if tie == "": #if there is a tie between the two most frequent, return unknown
+		return mostTag
+
+	return "unknown"
+
+#############################
 
 #######IGNORE, THIS IS FOR POSSIBLE IOG TAG METHODS FOR USE LATER IN PROJECT
 
@@ -116,40 +170,40 @@ def store_counts(filename):
 		currentp = paras[i]['context']
 
 		currentp = currentp.replace(" n't", "n 't")  # Standardize the contractions ('t is a separate word)
-    	currentp = currentp.replace('-', ' ')  # Get rid of hyphens
+		currentp = currentp.replace('-', ' ')  # Get rid of hyphens
 
-    	#split into words, add start/end tokens
-    	tokens = ['<s>'] + currentp.split() + ['</s>']
+		#split into words, add start/end tokens
+		tokens = ['<s>'] + currentp.split() + ['</s>']
 
-        count = len(tokens)
-        for i in range(count-1):
-            # treat upper and lower case words the same
-            word1 = tokens[i].lower()
-            word2 = tokens[i+1].lower()
+		count = len(tokens)
+		for i in range(count-1):
+			# treat upper and lower case words the same
+			word1 = tokens[i].lower()
+			word2 = tokens[i+1].lower()
 
-            #if words NOT in set, add to set, and change current word to <unk>
-            if(not(word1 in seen)):
-                seen.add(word1)
-                word1 = "<unk>"
-            
-            if(not(word2 in seen)):
-                seen.add(word2)
-                word2 = "<unk>"
+			#if words NOT in set, add to set, and change current word to <unk>
+			if(not(word1 in seen)):
+				seen.add(word1)
+				word1 = "<unk>"
+			
+			if(not(word2 in seen)):
+				seen.add(word2)
+				word2 = "<unk>"
 
-            types[word1][word2] += 1
+			types[word1][word2] += 1
 
-    # convert dictionary to table
+	# convert dictionary to table
 	table = pd.DataFrame(types).T
-    # add totals
+	# add totals
 	table['SUM'] = table.sum(axis=1)
- 	#table.loc['</s>', 'SUM'] = int(table.loc['<s>', 'SUM'])
- 	table = table.fillna(0).applymap(lambda x: int(x))
- 	return table
+	#table.loc['</s>', 'SUM'] = int(table.loc['<s>', 'SUM'])
+	table = table.fillna(0).applymap(lambda x: int(x))
+	return table
 
 # return the unigram P(word) for a given word, with a given table of counts
 def unigram(word, table):
-    try:
-        return float(table.loc[word, 'SUM'])/float(table['SUM'].sum())
-    except KeyError:
-        print "This word doesn't exist in the corpus."
+	try:
+		return float(table.loc[word, 'SUM'])/float(table['SUM'].sum())
+	except KeyError:
+		print("This word doesn't exist in the corpus.")
 
