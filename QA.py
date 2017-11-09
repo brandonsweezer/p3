@@ -37,12 +37,37 @@ def main():
 		for j in range(len(qas)):
 			current_id = qas[j]["id"]
 			answerType = guessAnswerType(j)
-			possibleAnswers = narrowPhrases(answerType,taggedPhrases)
+			possibleAnswers = narrowPhrases(answerType,taggedPhrases) #WE NEED TO TAKE INTO ACCOUNT VERB PHRASES
 
+			bestAnswer = ""
+			bestScore = 2^31
+			for answer in possibleAnswers:
+				answerStatement = rephrase(answer,question) #Rephrase the answer as a statement
+				answerScore = calculatePerplexity(answerStatement,context) #Calculate the perplexity of the generated statement based on the context
+				if answerScore < bestScore:
+					bestAnswer = answer
+					bestScore = answerScore
 
+			QADict[current_id] = bestAnswer
 
-
+	writeJson(QADict)
 		
+
+"""Rephrases an answer (a noun or verb phrase) as a statement, given the question
+For example, if the question was "How many hours in the day are there?" and the answer
+provided was "24", rephrase("24","How many hours in the day are there?") would output
+"There are 24 hours in the day."
+"""
+def rephrase(answer, question):
+	pass
+
+
+"""Calculates the perplexity of a statement given a context. This statement will be the 
+answer statement from the rephrase function above. This will be used to evaluate which answer
+is the best out of a group of possible answers."""
+def calculatePerplexity(answerStatement,context):
+	pass
+
 
 #####BASELINE MODEL:
 
@@ -71,6 +96,11 @@ def baseLine(data):
 			baseDict[current_id] = randanswer
 
 	return baseDict
+
+#write out prediction json
+def writebaseJson(dict):
+	with open('pred.json', 'w') as fp:
+		json.dump(dict, fp)
 
 #write out prediction json
 def writeJson(dict):
