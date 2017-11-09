@@ -64,9 +64,53 @@ def rephrase(answer, question):
 
 """Calculates the perplexity of a statement given a context. This statement will be the 
 answer statement from the rephrase function above. This will be used to evaluate which answer
-is the best out of a group of possible answers."""
+is the best out of a group of possible answers. Context must be a string. 
+"""
 def calculatePerplexity(answerStatement,context):
-	pass
+	uni = unigram(context)
+	bi = bigram(context)
+
+	return(calcPer(answerStatement, uni, bi))
+
+"""Returns the unigram value, P(word), for a given word with a given dictionary of unigrams"""
+def unigramValue(word, dic):
+  return float(dic[word]) / sum(dic.values())
+
+"""Returns the unigram dictionary given the context paragraph"""
+def unigram(para):
+  token = nltk.word_tokenize(para)
+  unidict = {}
+  for i in range(len(token)):
+    word1 = token[i].lower()
+    if not(word1 in unidict):
+      unidict[word1] = 1
+    else: 
+      unidict[word1] = unidict[word1] + 1
+  return unidict
+
+"""Returns the bigram counter given the context paragraph"""
+def bigram(para):
+  token = nltk.word_tokenize(para)
+  token = [x.lower() for x in token]
+  bigrams = ngrams(token, 2)
+  return Counter(bigrams)
+
+"""Returns calculated perplexity given a context string, unigram dictionary, and bigram counter"""
+def calcPer(context, uni, bi):
+  contextBi = bigram(context)
+  
+  #if answer is a single word return unigram perplexity
+  if(len(contextBi) == 0):
+    return (1/unigramValue(context, uni))
+
+  #otherwise calculate bigram perplexity
+  elements = list(contextBi.elements())
+  perplex = 1
+  for x in elements:
+    prev = x[0]
+    perplex = perplex * (unigramValue(prev, uni) / (float(bi[x]) / sum(bi.values())))
+  N = len(elements)
+  return (perplex)**(1/float(N))
 
 
 #####BASELINE MODEL:
@@ -342,42 +386,6 @@ def training_unigram():
         unigrams[word1] = unigrams[word1] + 1
 
   return unigrams
-
-# return the unigram P(word) for a given word, with a given dictionary of unigrams
-def unigramValue(word, dic):
-  return float(dic[word]) / sum(dic.values())
-
-#returns unigram dictionary for context string
-def unigram(para):
-  token = nltk.word_tokenize(para)
-  unidict = {}
-  for i in range(len(token)):
-    word1 = token[i].lower()
-    if not(word1 in unidict):
-      unidict[word1] = 1
-    else: 
-      unidict[word1] = unidict[word1] + 1
-  return unidict
-
-#returns bigram counter for given paragraph context string
-def bigram(para):
-  token = nltk.word_tokenize(para)
-  token = [x.lower() for x in token]
-  bigrams = ngrams(token, 2)
-  return Counter(bigrams)
-
-#calculated perplexity given a context string, unigram dictionary, and bigram counter
-def calcPer(context, uni, bi):
-  contextBi = bigram(context)
-  if(len(contextBi) == 0):
-    return (1/unigramValue(context, uni))
-  elements = list(contextBi.elements())
-  perplex = 1
-  for x in elements:
-    prev = x[0]
-    perplex = perplex * (unigramValue(prev, uni) / (float(bi[x]) / sum(bi.values())))
-  N = len(elements)
-  return (perplex)**(1/float(N))
 
 def random_paragraph(filename):
 	data = readFile(filename)
