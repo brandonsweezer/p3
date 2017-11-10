@@ -36,27 +36,48 @@ def main():
 			qs = paragraphs[i]["qas"] #questions
 			taggedContext = tagger.tag(context.split())
 			taggedPhrases = getNERPhrases(taggedContext)
+			answerSentences = answerquestions(paragraphs[i])
 
 			for j in range(len(qs)):
 				current_id = qs[j]["id"]
 				question = qs[j]["question"]
+				answerSentence = answerSentences.get(question)
 				answerType = guessAnswerType(question)
-				possibleAnswers = narrowPhrases(answerType,taggedPhrases,question) #WE NEED TO TAKE INTO ACCOUNT VERB PHRASES
 
-				bestAnswer = ""
-				bestScore = 2^31
-				for answer in possibleAnswers:
-					answerStatement = rephrase(answer,question) #Rephrase the answer as a statement
-					answerScore = calculatePerplexity(answerStatement,context) #Calculate the perplexity of the generated statement based on the context
-					if answerScore < bestScore: #Find answer with least perplexity
-						bestAnswer = answer
-						bestScore = answerScore
+				possibleAnswers = searchForAnswer(answerSentence,answerType)
+
+				#possibleAnswers = narrowPhrases(answerType,taggedPhrases,question) #WE NEED TO TAKE INTO ACCOUNT VERB PHRASES
+				
+				# bestAnswer = ""
+				# bestScore = 2^31
+				# for answer in possibleAnswers:
+				# 	answerStatement = rephrase(answer,question) #Rephrase the answer as a statement
+				# 	answerScore = calculatePerplexity(answerStatement,context) #Calculate the perplexity of the generated statement based on the context
+				# 	if answerScore < bestScore: #Find answer with least perplexity
+				# 		bestAnswer = answer
+				# 		bestScore = answerScore
+				
+				bestAnswer = getBestAnswer(possibleAnswers,answerSentence)
 
 				QADict[current_id] = bestAnswer
 
 	writeJson(QADict)
 	print("Done.")
+
+
+"""Searches a given sentence for a certain answer type
+returns a list of possible answers of that type, or all possible answers
+if that type is not found.
+"""
+def searchForAnswer(sentence,answerType):
+	pass
 		
+
+"""Finds the best answer given a list of possible answers and a sentence"""
+def getBestAnswer(possibleAnswers, answerSentence):
+	pass
+
+
 def tester(para):
 	QADict = {}
 	tagger = StanfordNERTagger("stanford-ner-2014-06-16/classifiers/english.conll.4class.distsim.crf.ser.gz",
