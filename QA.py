@@ -8,6 +8,8 @@ from nltk.tag.stanford import StanfordNERTagger
 import re
 
 import nltk
+import re
+from nltk.tokenize import sent_tokenize
 from nltk import word_tokenize
 from nltk.util import ngrams
 from collections import Counter
@@ -20,39 +22,69 @@ def main():
 
 	tagger = StanfordNERTagger("stanford-ner-2014-06-16/classifiers/english.conll.4class.distsim.crf.ser.gz",
 		"stanford-ner-2014-06-16/stanford-ner.jar")
-	evalFile = "development.json"
+	evalFile = "testing.json"
 
 	data = readFile(evalFile)
-	paragraphs = data["data"][0]["paragraphs"]
 	QADict = {}
+	for k in range(len(data["data"])):
+		print(k)
+		paragraphs = data["data"][k]["paragraphs"]
+		for i in range(len(paragraphs)):
+			print(i)
+			context = paragraphs[i]["context"]
+			nps = noun_phrases(context) #noun phrases
+			qs = paragraphs[i]["qas"] #questions
+			taggedContext = tagger.tag(context.split())
+			taggedPhrases = getNERPhrases(taggedContext)
 
-	for i in range(len(paragraphs)):
-		context = paragraphs[i]["context"]
-		nps = noun_phrases(context) #noun phrases
-		qs = paragraphs[i]["qas"] #questions
-		taggedContext = tagger.tag(context.split())
-		taggedPhrases = getNERPhrases(taggedContext)
+			for j in range(len(qs)):
+				current_id = qs[j]["id"]
+				question = qs[j]["question"]
+				answerType = guessAnswerType(question)
+				possibleAnswers = narrowPhrases(answerType,taggedPhrases,question) #WE NEED TO TAKE INTO ACCOUNT VERB PHRASES
 
-		for j in range(len(qs)):
-			current_id = qs[j]["id"]
-			question = qs[j]["question"]
-			answerType = guessAnswerType(question)
-			possibleAnswers = narrowPhrases(answerType,taggedPhrases,question) #WE NEED TO TAKE INTO ACCOUNT VERB PHRASES
+				bestAnswer = ""
+				bestScore = 2^31
+				for answer in possibleAnswers:
+					answerStatement = rephrase(answer,question) #Rephrase the answer as a statement
+					answerScore = calculatePerplexity(answerStatement,context) #Calculate the perplexity of the generated statement based on the context
+					if answerScore < bestScore: #Find answer with least perplexity
+						bestAnswer = answer
+						bestScore = answerScore
 
-			bestAnswer = ""
-			bestScore = 2^31
-			for answer in possibleAnswers:
-				answerStatement = rephrase(answer,question) #Rephrase the answer as a statement
-				answerScore = calculatePerplexity(answerStatement,context) #Calculate the perplexity of the generated statement based on the context
-				if answerScore < bestScore: #Find answer with least perplexity
-					bestAnswer = answer
-					bestScore = answerScore
-
-			QADict[current_id] = bestAnswer
+				QADict[current_id] = bestAnswer
 
 	writeJson(QADict)
 	print("Done.")
 		
+def tester(para):
+	QADict = {}
+	tagger = StanfordNERTagger("stanford-ner-2014-06-16/classifiers/english.conll.4class.distsim.crf.ser.gz",
+		"stanford-ner-2014-06-16/stanford-ner.jar")
+	context = para[0]["context"]
+	nps = noun_phrases(context) #noun phrases
+	qs = para[0]["qas"] #questions
+	taggedContext = tagger.tag(context.split())
+	taggedPhrases = getNERPhrases(taggedContext)
+
+	for j in range(len(qs)):
+		current_id = qs[j]["id"]
+		question = qs[j]["question"]
+		answerType = guessAnswerType(question)
+		possibleAnswers = narrowPhrases(answerType,taggedPhrases,question) #WE NEED TO TAKE INTO ACCOUNT VERB PHRASES
+
+		bestAnswer = ""
+		bestScore = 2^31
+		for answer in possibleAnswers:
+			answerStatement = rephrase(answer,question) #Rephrase the answer as a statement
+			answerScore = calculatePerplexity(answerStatement,context) #Calculate the perplexity of the generated statement based on the context
+			if answerScore < bestScore: #Find answer with least perplexity
+				bestAnswer = answer
+				bestScore = answerScore
+
+		QADict[current_id] = bestAnswer
+
+	return QADict
 
 """Rephrases an answer (a noun or verb phrase) as a statement, given the question
 For example, if the question was "How many hours in the day are there?" and the answer
@@ -252,17 +284,32 @@ def getNERPhrases(taggedWords):
 
 	runningPhrase = ""
 	runningTag = "O"
+	prevword = ""
 
 	for word, tag in taggedWords:
+		#print(tag)
+		#print(runningTag)
+		if(endOfSent(word) and tag != "O"):
+			runningPhrase = runningPhrase + " " + word[:-1]
+			taggedPhrases.append((runningPhrase.strip(' '),runningTag))
+			runningPhrase = ""
+			prevword = word
+			continue
+
 		if tag == "O":
-			if not (runningTag == "O"):
+			if (word[0].isupper()):
+				runningPhrase = runningPhrase + " " + word
+				prevword = word
+			elif not (runningTag == "O"):
 				taggedPhrases.append((runningPhrase.strip(' '),runningTag))
 				runningPhrase = ""
 				runningTag = "O"
+				prevword = word
 		elif not (tag == runningTag):
 			taggedPhrases.append((runningPhrase.strip(' '),runningTag))
 			runningPhrase = word
 			runningTag = tag
+			prevword = word
 		else:
 			runningPhrase = runningPhrase + " " + word
 
@@ -271,6 +318,31 @@ def getNERPhrases(taggedWords):
 			taggedPhrases.remove((p,t))
 
 	return taggedPhrases
+
+def endOfSent(word):
+    return word[-1] == "."
+
+def expandPhrases(tagP, para):
+	sent_tokenize_list = sent_tokenize(para['context'])
+
+	qsent = {}
+	maxindex = 0
+	maxcount = 0
+	for q in para['qas']:
+		question = q["question"]
+		words = re.findall(r'(?<!\.\s)\b[A-Z][a-z]*\b', question)
+		print(words)
+		for i in range(len(sent_tokenize_list)):
+			count = 0
+			for word in words:
+				if word in sent_tokenize_list[i]:
+					count = count + 1
+			if (count > maxcount):
+				maxcount = count
+				maxindex = i
+		qsent[question] = sent_tokenize_list[maxindex]
+	return qsent
+
 
 
 #############################
