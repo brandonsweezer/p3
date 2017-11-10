@@ -328,7 +328,7 @@ def getNERPhrases(taggedWords):
 def endOfSent(word):
     return word[-1] == "."
 
-def answerquestions(tagP, para):
+def answerquestions(para):
 	sent_tokenize_list = sent_tokenize(para['context'])
 
 	qsent = {}
