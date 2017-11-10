@@ -65,12 +65,29 @@ def main():
 	print("Done.")
 
 
-"""Searches a given sentence for a certain answer type
+"""Searches a given TAGGED sentence for a certain answer type
 returns a list of possible answers of that type, or all possible answers
 if that type is not found.
 """
 def searchForAnswer(sentence,answerType):
-	pass
+	panswers = []
+	allanswers = []
+
+	s = getNERPhrases(sentence)
+	for phrase, tag in s:
+		allanswers.append(phrase)
+		if tag.lower() == answerType:
+			panswers.add(phrase)
+		elif tag == "MISC":
+			if answerType == "number" or answerType == "date":
+				for n,t in sentence:
+					if n.isdigit():
+						panswers.append(n)
+
+	if panswers = []:
+		panswers = allanswers
+
+	return panswers
 		
 
 """Finds the best answer given a list of possible answers and a sentence"""
