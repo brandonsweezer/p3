@@ -328,7 +328,7 @@ def getNERPhrases(taggedWords):
 def endOfSent(word):
     return word[-1] == "."
 
-def expandPhrases(tagP, para):
+def answerquestions(tagP, para):
 	sent_tokenize_list = sent_tokenize(para['context'])
 
 	qsent = {}
@@ -336,8 +336,8 @@ def expandPhrases(tagP, para):
 	maxcount = 0
 	for q in para['qas']:
 		question = q["question"]
-		words = re.findall(r'(?<!\.\s)\b[A-Z][a-z]*\b', question)
-		print(words)
+		#words = re.findall(r'(?<!\.\s)\b[A-Z][a-z]*\b', question)
+		words = question.split()
 		for i in range(len(sent_tokenize_list)):
 			count = 0
 			for word in words:
@@ -347,6 +347,8 @@ def expandPhrases(tagP, para):
 				maxcount = count
 				maxindex = i
 		qsent[question] = sent_tokenize_list[maxindex]
+		maxindex = 0
+		maxcount = 0
 	return qsent
 
 
