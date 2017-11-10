@@ -21,8 +21,8 @@ def main():
 	# 	return "Done."
 
 	tagger = StanfordNERTagger("stanford-ner-2014-06-16/classifiers/english.conll.4class.distsim.crf.ser.gz",
-		"stanford-ner-2014-06-16/stanford-ner.jar")
-	evalFile = "testing.json"
+							   "stanford-ner-2014-06-16/stanford-ner.jar")
+	evalFile = "development.json"
 
 	data = readFile(evalFile)
 	QADict = {}
@@ -92,9 +92,9 @@ provided was "24", rephrase("24","How many hours in the day are there?") would o
 "There are 24 hours in the day."
 """
 def rephrase(answer, question):
-	unwanted = ["Did", "Who", "When", "What", "Where", "Why", "How", "Whom", "did", "who", "when", 
-	 "what", "where", "why", "how", "whom", "much", "many", "kind", "sort", " "]
-	
+	unwanted = ["Did", "Who", "When", "What", "Where", "Why", "How", "Whom", "did", "who", "when",
+				"what", "where", "why", "how", "whom", "much", "many", "kind", "sort", " "]
+
 	newq = question
 	for item in unwanted:
 		newq.strip(item)
@@ -114,46 +114,46 @@ def calculatePerplexity(answerStatement,context):
 
 """Returns the unigram value, P(word), for a given word with a given dictionary of unigrams"""
 def unigramValue(word, dic):
-  return float(dic.get(word,1/len(dic))) / sum(dic.values())
+	return float(dic.get(word,1/len(dic))) / sum(dic.values())
 
 """Returns the unigram dictionary given the context paragraph"""
 def unigram(para):
-  token = nltk.word_tokenize(para)
-  unidict = {}
-  for i in range(len(token)):
-    word1 = token[i].lower()
-    if not(word1 in unidict):
-      unidict[word1] = 1
-    else: 
-      unidict[word1] = unidict[word1] + 1
-  return unidict
+	token = nltk.word_tokenize(para)
+	unidict = {}
+	for i in range(len(token)):
+		word1 = token[i].lower()
+		if not(word1 in unidict):
+			unidict[word1] = 1
+		else:
+			unidict[word1] = unidict[word1] + 1
+	return unidict
 
 """Returns the bigram counter given the context paragraph"""
 def bigram(para):
-  token = nltk.word_tokenize(para)
-  token = [x.lower() for x in token]
-  bigrams = ngrams(token, 2)
-  return Counter(bigrams)
+	token = nltk.word_tokenize(para)
+	token = [x.lower() for x in token]
+	bigrams = ngrams(token, 2)
+	return Counter(bigrams)
 
 """Returns calculated perplexity given a context string, unigram dictionary, and bigram counter"""
 def calcPer(context, uni, bi):
-  contextBi = bigram(context)
-  
-  #if answer is a single word return unigram perplexity
-  if(len(contextBi) == 0):
-    return (1/unigramValue(context, uni))
+	contextBi = bigram(context)
 
-  #otherwise calculate bigram perplexity
-  elements = list(contextBi.elements())
-  perplex = 1
-  for x in elements:
-    prev = x[0]
-    if(x in bi.keys()):
-        perplex = perplex * (unigramValue(prev, uni) / (float(bi[x]) / sum(bi.values())))
-    else:
-    	perplex * (unigramValue(prev, uni) / ((float(1)/len(bi.keys())) / sum(bi.values())))
-  N = len(elements)
-  return (perplex)**(1/float(N))
+	#if answer is a single word return unigram perplexity
+	if(len(contextBi) == 0):
+		return (1/unigramValue(context, uni))
+
+	#otherwise calculate bigram perplexity
+	elements = list(contextBi.elements())
+	perplex = 1
+	for x in elements:
+		prev = x[0]
+		if(x in bi.keys()):
+			perplex = perplex * (unigramValue(prev, uni) / (float(bi[x]) / sum(bi.values())))
+		else:
+			perplex * (unigramValue(prev, uni) / ((float(1)/len(bi.keys())) / sum(bi.values())))
+	N = len(elements)
+	return (perplex)**(1/float(N))
 
 
 #####BASELINE MODEL:
@@ -204,25 +204,25 @@ def writeJson(dict):
 def guessAnswerType(question):
 	personIdentifiers = ["person", "Who", "who", "Whom", "whom", "person", "individual"]
 	locationIdentifiers = ["location", "Where", "where", "location", "place", "at", "country", "state",
-	 "city", "county", "province"]
-	organizationIdentifiers = ["organization", "Which", "which", "What", "what", "organization", 
-	 "team", "business", "company"]
+						   "city", "county", "province"]
+	organizationIdentifiers = ["organization", "Which", "which", "What", "what", "organization",
+							   "team", "business", "company"]
 	timeIdentifiers = ["time", "When", "when", "time", "What time", "what time", "in"]
 	dateIdentifiers = ["date", "When", "when", "what date", "What date", "year"]
 	thingIdentifiers = ["thing", "What", "what", "Which", "which"]
 	numberIdentifiers = ["number", "How many", "how many", "What number", "what number", "How much",
-	 "how much", "number", "number of", "count"]
+						 "how much", "number", "number of", "count"]
 
 	identifiersList = [personIdentifiers,locationIdentifiers,organizationIdentifiers,
-	timeIdentifiers,dateIdentifiers,thingIdentifiers,numberIdentifiers]
-	
+					   timeIdentifiers,dateIdentifiers,thingIdentifiers,numberIdentifiers]
+
 	runningGuesses = []
 
 	for identifiers in identifiersList: #Loops through every phrase in each set of
 		for phrase in identifiers[1:]:   #identifiers, and adds the corresponding
 			if not question.find(phrase + " ") == -1:      #tag to the guesses list as it goes
 				runningGuesses.append(identifiers[0])
-	
+
 	if runningGuesses == []: #if there is no guess, return unknown
 		return "unknown"
 
@@ -251,7 +251,7 @@ def guessAnswerType(question):
 	return mostTag #if there is a tie, just use one of them, it's more helpful than nothing
 
 
-def narrowPhrases(aType, taggedPhrases,question):
+def narrowPhrases(aType, taggedPhrases, question):
 	narrowedList = []
 	allphrases = []
 
@@ -264,7 +264,7 @@ def narrowPhrases(aType, taggedPhrases,question):
 		if t == "misc":
 			if aType == "number":
 				if bool(re.search(r'\d', phrase)): #see if there's a digit in the phrase
-					narrowedList.append(phrase)
+				 	narrowedList.append(phrase)
 
 			elif not (aType == "person" or aType == "organization" or aType == "location"):
 				narrowedList.append(phrase)
@@ -279,7 +279,7 @@ def narrowPhrases(aType, taggedPhrases,question):
 	return narrowedList
 
 
-def getNERPhrases(taggedWords):	
+def getNERPhrases(taggedWords):
 	taggedPhrases = []
 
 	runningPhrase = ""
@@ -311,7 +311,13 @@ def getNERPhrases(taggedWords):
 			runningTag = tag
 			prevword = word
 		else:
-			runningPhrase = runningPhrase + " " + word
+			if endOfSent(word):
+				runningPhrase = runningPhrase + " " + word
+				taggedPhrases.append((runningPhrase.strip(' '),runningTag))
+				runningPhrase = ""
+			else:
+				runningPhrase = runningPhrase + " " + word
+
 
 	for p, t in taggedPhrases:
 		if p == "" or t == "O":
@@ -342,7 +348,6 @@ def expandPhrases(tagP, para):
 				maxindex = i
 		qsent[question] = sent_tokenize_list[maxindex]
 	return qsent
-
 
 
 #############################
@@ -397,7 +402,7 @@ def crf(train_file, test_file, create_features):
 	x_train = [sentence_features(s, create_features) for s in train]
 	y_train = [sentence_labels(s) for s in train]
 	crf.fit(x_train, y_train)
-	
+
 	test = group_tokens_tags(test_file)
 	x_test = [sentence_features(s, create_features) for s in test]
 	y_test = [sentence_labels(s) for s in test]
@@ -410,7 +415,7 @@ def crf(train_file, test_file, create_features):
 
 #create bigram/unigram table
 def store_counts(filename):
-	
+
 	data = readFile(filename)
 	types = defaultdict(lambda: defaultdict(int))
 	seen = set()  # instantiate seen word set
@@ -437,7 +442,7 @@ def store_counts(filename):
 			if(not(word1 in seen)):
 				seen.add(word1)
 				word1 = "<unk>"
-			
+
 			if(not(word2 in seen)):
 				seen.add(word2)
 				word2 = "<unk>"
@@ -454,30 +459,30 @@ def store_counts(filename):
 
 #returns unigram dictionary based off training data
 def training_unigram():
-  data = readFile("training.json")
-  seen = set()
-  unigrams = {}
-  paras = data["data"][0]["paragraphs"]
-  length = len(paras)
+	data = readFile("training.json")
+	seen = set()
+	unigrams = {}
+	paras = data["data"][0]["paragraphs"]
+	length = len(paras)
 
-  for i in range(length):
-    currentp = paras[i]["context"]
-    currentp = currentp.replace(" n't", "n 't")
-    currentp = currentp.replace("-", " ")
-    tokens = ['<s>'] + currentp.split() + ['</s>']
-    count = len(tokens)
-    for j in range(count):
-      word1 = tokens[j].lower()
-      if(not(word1 in seen)):
-        seen.add(word1)
-        word1 = "<unk>"
+	for i in range(length):
+		currentp = paras[i]["context"]
+		currentp = currentp.replace(" n't", "n 't")
+		currentp = currentp.replace("-", " ")
+		tokens = ['<s>'] + currentp.split() + ['</s>']
+		count = len(tokens)
+		for j in range(count):
+			word1 = tokens[j].lower()
+			if(not(word1 in seen)):
+				seen.add(word1)
+				word1 = "<unk>"
 
-      if(not(word1 in unigrams.keys())):
-        unigrams[word1] = 1
-      else: 
-        unigrams[word1] = unigrams[word1] + 1
+			if(not(word1 in unigrams.keys())):
+				unigrams[word1] = 1
+			else:
+				unigrams[word1] = unigrams[word1] + 1
 
-  return unigrams
+	return unigrams
 
 def random_paragraph(filename):
 	data = readFile(filename)
