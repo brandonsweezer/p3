@@ -43,8 +43,9 @@ def main():
 				question = qs[j]["question"]
 				answerSentence = answerSentences.get(question)
 				answerType = guessAnswerType(question)
+				taggedSentence = tagger.tag(answerSentence)
 
-				possibleAnswers = searchForAnswer(answerSentence,answerType)
+				possibleAnswers = searchForAnswer(taggedSentence,answerType)
 
 				#possibleAnswers = narrowPhrases(answerType,taggedPhrases,question) #WE NEED TO TAKE INTO ACCOUNT VERB PHRASES
 				
